@@ -478,11 +478,11 @@ button{-webkit-user-select:none;user-select:none}
  <div class="note" id="sRem"></div>
  <div class="note" id="sProf"></div>
  <button class="btn" id="sSave" type="button">ثبت فروش</button>
- <div id="sMsg" class="note" role="status"></div>
+ <div id="saleMsg" class="note" role="status"></div>
 </div>
 <div class="card">
  <h2 id="sListH"></h2>
- <div id="sList"></div>
+ <div id="saleList"></div>
 </div>
 </section>
 
@@ -5117,6 +5117,8 @@ function pasteToList(){
   sItems=sItems.concat(added);
   saveItems();renderItems();
   smsg(toFa(list.length)+' آدرس اضافه شد'+(made<list.length?'؛ '+toFa(list.length-made)+' مورد برای بررسی دستی در اخطارها':''));
+  /* on a phone the list is below the input: scroll down to it so the new items are seen */
+  const tgt=$('sSum')||$('sList');if(tgt)setTimeout(()=>tgt.scrollIntoView({block:'start',behavior:'smooth'}),60);
 }
 function enterSmart(){fillSmartSel();paintSmode();renderItems();smsg('')}
 
@@ -6030,9 +6032,9 @@ function pickList(boxId,qId,onPick,cartLines){
 }
 function saleAdd(p){
   const st=AC.sale;const l=st.cart.find(x=>x.pid===p.id);
-  if(l){if(l.q+1>(+p.stock||0)){$('sMsg').textContent='موجودی «'+p.n+'» کافی نیست';return}l.q++}
-  else{if((+p.stock||0)<1){$('sMsg').textContent='«'+p.n+'» موجودی ندارد';return}st.cart.push({pid:p.id,q:1,price:+p.sell||0})}
-  st.paid=null;$('sMsg').textContent='';paintSale();
+  if(l){if(l.q+1>(+p.stock||0)){$('saleMsg').textContent='موجودی «'+p.n+'» کافی نیست';return}l.q++}
+  else{if((+p.stock||0)<1){$('saleMsg').textContent='«'+p.n+'» موجودی ندارد';return}st.cart.push({pid:p.id,q:1,price:+p.sell||0})}
+  st.paid=null;$('saleMsg').textContent='';paintSale();
 }
 function paintCart(boxId,kind){
   const st=AC[kind];const box=$(boxId);box.replaceChildren();
@@ -6048,7 +6050,7 @@ function paintCart(boxId,kind){
     const mk=t=>{const b=document.createElement('button');b.type='button';b.className='btn alt sm';b.textContent=t;return b};
     const mi=mk('−'),pl=mk('+'),qv=document.createElement('span');qv.textContent=qtyTxt(l.q);
     mi.onclick=()=>{if(l.q>1){l.q=Math.round((l.q-1)*1000)/1000}else{st.cart.splice(i,1)}st.paid=null;paintSale();paintBuy()};
-    pl.onclick=()=>{if(kind==='sale'&&p&&l.q+1>(+p.stock||0)){$('sMsg').textContent='موجودی «'+p.n+'» کافی نیست';return}l.q=Math.round((l.q+1)*1000)/1000;st.paid=null;paintSale();paintBuy()};
+    pl.onclick=()=>{if(kind==='sale'&&p&&l.q+1>(+p.stock||0)){$('saleMsg').textContent='موجودی «'+p.n+'» کافی نیست';return}l.q=Math.round((l.q+1)*1000)/1000;st.paid=null;paintSale();paintBuy()};
     const pin=document.createElement('input');pin.type='text';pin.inputMode='numeric';pin.value=money(kind==='sale'?l.price:l.price).replace(/[^۰-۹]/g,'')||'';
     pin.value=toFa(String(Math.round(l.price)).replace(/\B(?=(\d{3})+(?!\d))/g,','));
     pin.placeholder=kind==='sale'?'قیمت فروش':'قیمت خرید';
@@ -6088,7 +6090,7 @@ function saleCustPick(){
     w.innerHTML='<div class="note">مشتری پیدا نشد. شماره‌ی «'+esc(raw)+'» را ثبت کنید:</div>';
     const ph=document.createElement('input');ph.type='tel';ph.placeholder='شماره‌ی موبایل';ph.inputMode='numeric';
     const b=document.createElement('button');b.type='button';b.className='btn sm';b.textContent='ثبت مشتری جدید';
-    b.onclick=()=>{const p=P2E(ph.value).replace(/\D/g,'');if(!isValidPhone(p)){$('sMsg').textContent='شماره‌ی موبایل درست نیست';return}addToNums(raw,p);st.cust=p;$('sCQ').value='';paintSale()};
+    b.onclick=()=>{const p=P2E(ph.value).replace(/\D/g,'');if(!isValidPhone(p)){$('saleMsg').textContent='شماره‌ی موبایل درست نیست';return}addToNums(raw,p);st.cust=p;$('sCQ').value='';paintSale()};
     w.append(ph,b);res.append(w);
   }
 }
@@ -6101,7 +6103,7 @@ function paintSale(){
   updateTotals();
   const day=sales.filter(s=>s.d===st.date);
   $('sListH').textContent='فروش‌های '+jDay(st.date)+' ('+toFa(day.length)+')';
-  const box=$('sList');box.replaceChildren();
+  const box=$('saleList');box.replaceChildren();
   if(!day.length){const e=document.createElement('div');e.className='note';e.textContent='فروشی در این روز ثبت نشده';box.append(e)}
   day.slice().sort((a,b)=>b.t-a.t).forEach(s=>{
     const row=document.createElement('div');row.className='nrow';
@@ -6115,7 +6117,7 @@ function paintSale(){
   });
 }
 function saleSave(){
-  const st=AC.sale,m=$('sMsg');
+  const st=AC.sale,m=$('saleMsg');
   if(!st.cart.length){m.textContent='سبد فروش خالی است';return}
   for(const l of st.cart){const p=prodOf(l.pid);if(!p){m.textContent='کالای نامعتبر در سبد';return}if(l.q>(+p.stock||0)){m.textContent='موجودی «'+p.n+'» کافی نیست (موجودی: '+qtyTxt(p.stock)+')';return}if(!(l.price>=0)){m.textContent='قیمت را درست وارد کنید';return}}
   const total=cartTotal(st.cart);
@@ -6130,7 +6132,7 @@ function saleSave(){
   saveAcct();
   st.cart=[];st.paid=null;st.cust='';$('sCQ').value='';
   paintSale();paintAcct();
-  $('sMsg').textContent='فروش ثبت شد'+(rem>0?' و بدهی '+money(rem)+' تومان به حساب مشتری رفت':'');
+  $('saleMsg').textContent='فروش ثبت شد'+(rem>0?' و بدهی '+money(rem)+' تومان به حساب مشتری رفت':'');
 }
 function saleDelete(id){
   const s=sales.find(x=>x.id===id);if(!s)return;
