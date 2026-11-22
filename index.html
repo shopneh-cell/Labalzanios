@@ -269,6 +269,11 @@ textarea,input[type=text],select{font-size:16px}
 .seg.wide button{flex:1}
 input[type=date]{color-scheme:dark;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:12px;padding:10px;font:inherit;min-height:44px}
 </style>
+<style>
+/* text can always be selected and copied on iPhone (and in the textarea) */
+body,p,span,div,td,th,label,textarea,input{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}
+button{-webkit-user-select:none;user-select:none}
+</style>
 </head>
 <body>
 <main>
@@ -5515,8 +5520,13 @@ $('saveDirBtn').onclick=async()=>{
 /* ---- paste from clipboard button (works with the mouse too) ---- */
 $('sPaste').onclick=async()=>{
   let t='';
-  try{t=await navigator.clipboard.readText()}catch(e){}
-  if(!t.trim()){smsg('کلیپبورد خالی است یا دسترسی داده نشد');return}
+  try{if(navigator.clipboard&&navigator.clipboard.readText)t=await navigator.clipboard.readText()}catch(e){}
+  if(!t.trim()){
+    /* iPhone (home-screen app) often blocks clipboard reading: paste into the box by hand */
+    const box=$('sTxt');box.focus();box.scrollIntoView({block:'center'});
+    smsg('داخل کادر، انگشت را نگه دارید و «Paste» یا «چسباندن» را بزنید، بعد دکمه‌ی افزودن را بزنید');
+    return;
+  }
   $('sTxt').value=t;pasteToList();
 };
 
